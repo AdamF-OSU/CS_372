@@ -1,0 +1,33 @@
+# Adam Fitzpatrick
+# server.py
+
+# Creates a simple server side socket. Defines a welcoming socket,
+# that listens for connection requests, when a client connects, a new socket
+# is created for the accepted client and reads up to 1024 bytes of the request from the client,
+# then returns the defined data.
+
+from socket import *
+
+serverPort = 5005                                       # define a port number > 1024
+serverSocket = socket(AF_INET, SOCK_STREAM)             # creates a TCP socket
+
+serverSocket.bind(('', serverPort))                     # Binds the socket
+serverSocket.listen()                                   # Tells the server socket to start listening for clients.
+
+data = "HTTP/1.1 200 OK\r\n" \
+       "Content-Type: text/html; charset=UTF-8\r\n\r\n" \
+       "<html>Congratulations! You've downloaded the first Wireshark lab file!</html>\r\n"
+
+while True:
+    connectedSocket, addr = serverSocket.accept()       # Creates a new socket for client communication.
+    print(f"Connected to: {addr}\n")
+
+    request = connectedSocket.recv(1024)                # Reads up to 1024 bytes of data from the client.
+    print(f"Received: {request}\n")
+
+    print("Sending >>>>>>>>>")
+    print(data)                                         # Prints data infor to terminal.
+
+    connectedSocket.send(data.encode())                 # Sends "data" back to the client.
+    print("<<<<<<<<<<")
+    connectedSocket.close()
