@@ -101,9 +101,10 @@ class RDTLayer(object):
         # ############################################################################################################ #
         # Identify the data that has been received...
 
-        print("getDataReceived(): Complete this...")
+        print(f"getDataReceived(): {self.dataRecieved}")
 
-        # ############################################################################################################ #
+        #
+        # ############################################################################################################ #+
         return self.dataReceived
 
     # ################################################################################################################ #
@@ -128,7 +129,7 @@ class RDTLayer(object):
     #                                                                                                                  #
     # ################################################################################################################ #
     def processSend(self):
-        """Implements a stop and wait go back N approach.
+        """Implements a stop and wait, go back N approach.
 
         If the last acknowledged number is less than the next sequence number and
         the current iteration exceeds the timeout window, the data that hasn't yet
