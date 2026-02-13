@@ -47,12 +47,14 @@ class RDTLayer(object):
         self.sendChannel = None
         self.receiveChannel = None
         self.dataToSend = ""
+        self.dataReceived = ""
         self.currentIteration = 0
         self.next_sequence_number = 0
         self.last_ACKed = 0
         self.sent_segments = []
         self.timer = 0
         self.timeout = 10
+        self.expected_sequence_number = 0
 
         # Add items as needed
 
@@ -101,7 +103,7 @@ class RDTLayer(object):
         # ############################################################################################################ #
         # Identify the data that has been received...
 
-        print(f"getDataReceived(): {self.dataRecieved}")
+        print(f"getDataReceived(): {self.dataReceived}")
 
         #
         # ############################################################################################################ #+
@@ -162,7 +164,7 @@ class RDTLayer(object):
             segment_send = Segment()
 
             # Variable to hold the sequence number
-            seq_num = self.next_sequence_number
+            seqnum = self.next_sequence_number
 
             # Variable to hold the data to send starting at .next_sequence_number up to DATA_Length
             data = self.dataToSend[
@@ -170,7 +172,7 @@ class RDTLayer(object):
                 + RDTLayer.DATA_LENGTH
             ]
 
-            segment_send.setData(seq_num, data)
+            segment_send.setData(seqnum, data)
             print("Sending segment: ", segment_send.to_string())
 
             # Sends data through the unreliable channel.
@@ -189,17 +191,33 @@ class RDTLayer(object):
     #                                                                                                                  #
     # ################################################################################################################ #
     def processReceiveAndSendRespond(self):
-        segmentAck = Segment()  # Segment acknowledging packet(s) received
+
 
         # This call returns a list of incoming segments (see Segment class)...
         listIncomingSegments = self.receiveChannel.receive()
+
+        for packet in listIncomingSegments:
+            if packet.acknum == -1:
+                if not packet.checkChecksum:
+                    segmentAck = Segment()
+                    segmentAck.setAck(self.expected_sequence_number)
+                    self.sendChannel.send(segmentAck)
+
+                else:
+                    if packet.seqnum == self.expected_sequence_number:
+                        self.dataReceived += packet.payload
+                        self.expected_sequence_number += len(packet.payload)
+
+                    segmentAck = Segment()
+                    segmentAck.setAck(self.expected_sequence_number)
+                    self.sendChannel.send(segmentAck)
 
         # ############################################################################################################ #
         # What segments have been received?
         # How will you get them back in order?
         # This is where a majority of your logic will be implemented
 
-        print("processReceive(): Complete this...")
+        print(f"processReceive():")
 
         # ############################################################################################################ #
         # How do you respond to what you have received?
