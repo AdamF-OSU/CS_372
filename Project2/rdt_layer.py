@@ -52,7 +52,6 @@ class RDTLayer(object):
         self.next_sequence_number = 0
         self.last_ACKed = 0
         self.sent_segments = []             # Keeps track of sent segments, used to implement go back N
-        self.timer = 0                      # Define a timer.
         self.timeout = 10                   # Set timeout window
         self.expected_sequence_number = 0
         self.countSegmentTimeouts = 0
@@ -161,29 +160,25 @@ class RDTLayer(object):
                 for segment in self.sent_segments:
                     self.sendChannel.send(segment)
 
-                self.timer = self.currentIteration       # Reset timer.
-                self.countSegmentTimeouts += 1           # Implemented suggestion from https://edstem.org/us/courses/90274/discussion/7635500
-
-
+                self.timer = self.currentIteration  # Reset timer.
+                self.countSegmentTimeouts += 1  # Implemented suggestion from https://edstem.org/us/courses/90274/discussion/7635500
 
         # Processes packets as long as there is data to send, and it fits within the flow control window.
         while (self.next_sequence_number < len(self.dataToSend)) and (
-            self.next_sequence_number < self.last_ACKed + RDTLayer.FLOW_CONTROL_WIN_SIZE
+                self.next_sequence_number < self.last_ACKed + RDTLayer.FLOW_CONTROL_WIN_SIZE
         ):
+            segmentSend = Segment()  # Create a new empty packet.
+            seqnum = self.next_sequence_number  # Variable to hold sequence number
 
-            segmentSend = Segment()                     # Create a new empty packet.
-            seqnum = self.next_sequence_number          # Variable to hold sequence number
-
-
-            data = self.dataToSend[seqnum : seqnum + RDTLayer.DATA_LENGTH]  # Defines the data to send, uses slicing to create a chunk of DATA_LENGTH.
-            segmentSend.setData(seqnum, data)                               # Uses setData to create the checksum.
+            data = self.dataToSend[
+                seqnum: seqnum + RDTLayer.DATA_LENGTH]  # Defines the data to send, uses slicing to create a chunk of DATA_LENGTH.
+            segmentSend.setData(seqnum, data)  # Uses setData to create the checksum.
 
             print("Sending segment: ", segmentSend.to_string())
 
-
-            self.sendChannel.send(segmentSend)          # Sends data through the unreliable channel.
-            self.sent_segments.append(segmentSend)      # Appends the sent segments to a list for tracking.
-            self.next_sequence_number += len(data)      # Sets sequence number for the next segment.
+            self.sendChannel.send(segmentSend)  # Sends data through the unreliable channel.
+            self.sent_segments.append(segmentSend)  # Appends the sent segments to a list for tracking.
+            self.next_sequence_number += len(data)  # Sets sequence number for the next segment.
 
 
     # ################################################################################################################ #
@@ -226,14 +221,23 @@ class RDTLayer(object):
                     segmentAck.setAck(self.expected_sequence_number)
                     self.sendChannel.send(segmentAck)
 
+            else:
+                if packet.acknum > self.last_ACKed:
+                    self.last_ACKed = packet.acknum
 
+
+                    self.timer = self.currentIteration
+
+                    while len(self.sent_segments) > 0 and self.sent_segments[0].seqnum < self.last_ACKed:
+                        self.sent_segments.pop(0)
 
         # ############################################################################################################ #
         # What segments have been received?
         # How will you get them back in order?
         # This is where a majority of your logic will be implemented
 
-        print(f"processReceive():{self.dataReceived}")
+        if len(listIncomingSegments) > 0:
+            print(f"Processed {len(listIncomingSegments)} packets. Current Data: '{self.dataReceived}'")
 
         # ############################################################################################################ #
         # How do you respond to what you have received?
